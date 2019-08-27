@@ -1,0 +1,5 @@
+SiteName: aaa
+Server:
+  SADDRESS: 192.168.1.114:3002
+Client:
+  CADDRESS: 192.168.1.114:3002

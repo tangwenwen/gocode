@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>List</title>
+</head>
+<body>
+<ol>
+{{range $.images}}
+    <li><a href="/view?id={{.|urlquery}}">{{.|html}}</a>
+        <button onclick="delete1({{.|urlquery}})">删除</button></li>
+{{end}}
+</ol>
+</body>
+<script src="http://libs.baidu.com/jquery/2.1.4/jquery.min.js"></script>
+<script>
+function delete1(imgid)
+{
+    $.ajax({
+        url:"/delete?imgid="+imgid,
+        type:"DELETE",
+        contentType:"application/json",//设置请求参数类型为json字符串
+        dataType:"json",
+        success:function(result){
+
+                console.log(result)
+
+        },
+    });
+}
+
+</script>
+</html>

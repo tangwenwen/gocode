@@ -1,0 +1,12 @@
+syntax = "proto3";
+package DataPro;
+
+message SendMessage{
+    string name = 1;
+}
+message ReplyMessage{
+    string message = 2;
+}
+service Greeter{
+    rpc SayHi(SendMessage) returns(ReplyMessage) {}
+}
