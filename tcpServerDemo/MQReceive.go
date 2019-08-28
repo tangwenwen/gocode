@@ -49,7 +49,7 @@ func main() {
 	go func() {
 		for d := range msgs {
 			count++
-			log.Println(string(d.Body), count)
+			fmt.Println(string(d.Body), count)
 			d.Ack(false)
 		}
 	}()

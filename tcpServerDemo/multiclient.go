@@ -3,17 +3,16 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
 	"sync"
 	"time"
 )
 
 var (
 	wg               sync.WaitGroup = sync.WaitGroup{}
-	sendCount        int            = 50
+	sendCount        int            = 1000
 	failSendCount    int            = 0
 	successSendcount int            = 0
-	sendTime         int            = 60
+	sendTime         int            = 10
 )
 
 func main() {
@@ -25,19 +24,19 @@ func main() {
 				defer wg.Done()
 				conn, err := net.Dial("tcp", "192.168.1.114:3002")
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Fatal error2: %s\n", err.Error())
+					// fmt.Fprintf(os.Stderr, "Fatal error2: %s\n", err.Error())
 					failSendCount++
 				} else {
-					fmt.Println("connect success")
+					// fmt.Println("connect success")
 					sender1(conn)
 				}
 			}(&wg)
 		}
-		time.Sleep(1e9)
-		fmt.Println(i)
+		time.Sleep(7e8)
+		fmt.Printf("%d.", i)
 	}
 	wg.Wait()
-	fmt.Println("successSendcount:", successSendcount, "failCount:", failSendCount, "failureRate:", float64(failSendCount)/float64(sendCount*sendTime)*100, "%  ////", time.Since(startTime))
+	fmt.Println("\nsuccessSendcount:", successSendcount, "failCount:", failSendCount, "failureRate:", "speedtime", float64(failSendCount)/float64(sendCount*sendTime)*100, "%  ////", time.Since(startTime))
 
 }
 func sender1(conn net.Conn) {
@@ -55,5 +54,5 @@ func sender1(conn net.Conn) {
 		return
 	}
 	successSendcount++
-	fmt.Println("send over")
+	// fmt.Println("send over")
 }

@@ -20,7 +20,7 @@ type Config struct {
 
 func GetConfig() Config {
 	var setting Config
-	config, err := ioutil.ReadFile("C:/Users/123/Desktop/untitled1/src/demo/cstest/conf/conf.yaml")
+	config, err := ioutil.ReadFile("C:/Users/123/Desktop/untitled1/src/demo/tcpServerDemo/conf/conf.yaml")
 	if err != nil {
 		fmt.Println("error", err)
 	}

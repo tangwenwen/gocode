@@ -20,6 +20,7 @@ type sendObj struct {
 	Code int
 	Data sendData
 }
+
 type sendData struct {
 	User_name  string  `json:"user_name"`  //用户名
 	Lng        float64 `json:"lng"`        //经度
@@ -30,7 +31,7 @@ type sendData struct {
 }
 
 var (
-	logfile, _ = os.OpenFile("C:/Users/123/Desktop/untitled1/src/demo/cstest/log/log.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+	logfile, _ = os.OpenFile("C:/Users/123/Desktop/untitled1/src/demo/tcpServerDemo/log/log.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 	logger     = log.New(logfile, "", log.Llongfile)
 )
 
@@ -47,7 +48,6 @@ func main() {
 	ch, err := amqpconn.Channel()
 	failOnError(err, "failed to open a channel")
 	defer ch.Close()
-
 	//建立队列来存储/转发信息
 	q, err := ch.QueueDeclare(
 		"info_queue",
@@ -60,6 +60,7 @@ func main() {
 
 	add, err := net.ResolveTCPAddr("tcp4", conf.GetConfig().ServerConf.SADDRESS)
 	checkError(err)
+
 	listenner, err := net.ListenTCP("tcp", add)
 	checkError(err)
 	logger.Println("starting listening...")
@@ -77,18 +78,20 @@ func acceptClient(listenner net.Listener, q amqp.Queue, ch *amqp.Channel) {
 			logger.Println("err3", err)
 		}
 		tcp := conn.(*net.TCPConn)
-		go haddleConnection1(tcp, q, ch)
+		go haddleConnection(tcp, q, ch)
 	}
 
 }
-func haddleConnection1(conn *net.TCPConn, q amqp.Queue, ch *amqp.Channel) {
+func haddleConnection(conn *net.TCPConn, q amqp.Queue, ch *amqp.Channel) {
+
 	defer conn.Close()
 	readChan := make(chan []byte) //读数据管道
 	sendChan := make(chan []byte) //发数据管道
-	stopChan := make(chan bool)   //停止管道
+	stopChan := make(chan bool)   //是否停止管道
+
 	go readConn(conn, readChan, stopChan)
 	go sendByMQ(sendChan, stopChan, q, ch)
-	// go sendConn(sendChan, stopChan)
+	// go sendByHttp(sendChan, stopChan)
 	for {
 		select {
 		case readByte := <-readChan:
@@ -97,10 +100,27 @@ func haddleConnection1(conn *net.TCPConn, q amqp.Queue, ch *amqp.Channel) {
 		case stop := <-stopChan:
 			if stop {
 				break
+
 			}
 		}
 	}
 }
+
+func sendByMQ(sendChan <-chan []byte, stopChan chan<- bool, q amqp.Queue, ch *amqp.Channel) {
+	err := ch.Publish(
+		"",
+		q.Name,
+		false,
+		false,
+		amqp.Publishing{
+			DeliveryMode: amqp.Persistent,
+			ContentType:  "application/json",
+			Body:         <-sendChan,
+		})
+	failOnError(err, "failed to publish a message")
+	stopChan <- true
+}
+
 func readConn(conn net.Conn, readChan chan<- []byte, stopChan chan<- bool) {
 	for {
 		conn.SetReadDeadline(time.Now().Add(time.Microsecond * 100))
@@ -120,7 +140,7 @@ func readConn(conn net.Conn, readChan chan<- []byte, stopChan chan<- bool) {
 	}
 	stopChan <- true
 }
-func sendConn(sendChan <-chan []byte, stopChan chan<- bool) {
+func sendByHttp(sendChan <-chan []byte, stopChan chan<- bool) {
 	data := <-sendChan
 	url := "http://tangwenwen.top:7999/work_sheet"
 	request, err := http.NewRequest("POST", url, bytes.NewReader(data))
@@ -133,23 +153,6 @@ func sendConn(sendChan <-chan []byte, stopChan chan<- bool) {
 		return
 	}
 	logger.Println(url, "reply status code:", resp.Status)
-	stopChan <- true
-}
-
-func sendByMQ(sendChan <-chan []byte, stopChan chan<- bool, q amqp.Queue, ch *amqp.Channel) {
-	data := <-sendChan
-
-	err := ch.Publish(
-		"",
-		q.Name,
-		false,
-		false,
-		amqp.Publishing{
-			DeliveryMode: amqp.Persistent,
-			ContentType:  "application/json",
-			Body:         data,
-		})
-	failOnError(err, "failed to publish a message")
 	stopChan <- true
 }
 
